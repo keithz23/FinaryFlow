@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to EcomGrove</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 28px;
+        }
+        .welcome-message {
+            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .login-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff7675 0%, #fd79a8 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .login-button:hover {
+            transform: translateY(-2px);
+        }
+        .features {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎉</div>
+            <h1>Welcome to EcomGrove</h1>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-message">
+                <h2 style="margin: 0;">Welcome, {{name}}!</h2>
+                <p style="margin: 10px 0 0 0;">Thank you for joining our platform. We're excited to have you on board!</p>
+            </div>
+            
+            <p>Your account has been successfully created. You can now access all the features of our platform.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="login-button">Get Started</a>
+            </div>
+            
+            <div class="features">
+                <h3>What you can do:</h3>
+                <ul>
+                    <li>✨ Access all premium features</li>
+                    <li>🔒 Secure account management</li>
+                    <li>📱 Mobile-friendly interface</li>
+                    <li>🎯 Personalized experience</li>
+                    <li>🔔 Real-time notifications</li>
+                </ul>
+            </div>
+            
+            <p>If you have any questions or need help getting started, don't hesitate to reach out to our support team.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Need help? Contact our support team anytime.</p>
+            <p>&copy; 2025 EcomGrove. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
