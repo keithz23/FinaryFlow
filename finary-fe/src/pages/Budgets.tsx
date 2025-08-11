@@ -8,9 +8,16 @@ import {
 } from "lucide-react";
 import type { Budget } from "../types";
 import DashboardCard from "../components/DashboardCard";
-import ProgressBar from "../components/Progressbar";
+import ProgressBar from "../components/ProgressBar";
+import BudgetForm from "../components/forms/BudgetForm";
 
 const BudgetsPage: React.FC = () => {
+  const [showBudgetForm, setShowBudgetForm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [selectedBudget, setSelectedBudget] = useState<Budget | undefined>();
+  const [budgetToDelete, setBudgetToDelete] = useState<Budget | undefined>();
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [budgets] = useState<Budget[]>([
     {
       id: "1",
@@ -106,6 +113,36 @@ const BudgetsPage: React.FC = () => {
     }
   };
 
+  const handleAddBudget = () => {
+    setFormMode("add");
+    setSelectedBudget(undefined);
+    setShowBudgetForm(true);
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    setFormMode("edit");
+    setSelectedBudget(budget);
+    setShowBudgetForm(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeleteBudget = (budget: Budget) => {
+    setBudgetToDelete(budget);
+    setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleBudgetSubmit = (budgetData: Omit<Budget, "id" | "spent">) => {
+    if (formMode === "add") {
+      const newBudget: Budget = {
+        ...budgetData,
+        id: Date.now().toString(),
+        spent: 100,
+      };
+      // setGoals([...goals, newGoal]);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -116,7 +153,10 @@ const BudgetsPage: React.FC = () => {
             Plan and track your spending across categories
           </p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          onClick={handleAddBudget}
+        >
           <Plus className="w-5 h-5" />
           <span>Create Budget</span>
         </button>
@@ -284,6 +324,14 @@ const BudgetsPage: React.FC = () => {
           );
         })}
       </div>
+
+      <BudgetForm
+        isOpen={showBudgetForm}
+        onClose={() => setShowBudgetForm(false)}
+        onSubmit={handleBudgetSubmit}
+        mode={formMode}
+        budget={selectedBudget}
+      />
 
       {/* Budget Tips */}
       <DashboardCard>
