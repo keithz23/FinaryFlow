@@ -490,6 +490,13 @@ const GoalsPage: React.FC = () => {
           </div>
         </div>
       </DashboardCard>
+
+      {activeDropdown && (
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
     </div>
   );
 };

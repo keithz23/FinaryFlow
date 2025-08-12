@@ -125,7 +125,7 @@ const GoalForm: React.FC<GoalFormProps> = ({
             <h2 className="text-xl font-semibold text-gray-900">
               {mode === "add" ? "Create Goal" : "Edit Goal"}
             </h2>
-            <button
+            <button 
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >

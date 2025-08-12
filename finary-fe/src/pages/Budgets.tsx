@@ -1,15 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
   CheckCircle,
+  Trash2,
+  Edit,
+  MoreVertical,
 } from "lucide-react";
 import type { Budget } from "../types";
 import DashboardCard from "../components/DashboardCard";
 import ProgressBar from "../components/ProgressBar";
 import BudgetForm from "../components/forms/BudgetForm";
+import DeleteConfirmModal from "../components/forms/DeleteConfirmModal";
 
 const BudgetsPage: React.FC = () => {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
@@ -18,7 +22,7 @@ const BudgetsPage: React.FC = () => {
   const [selectedBudget, setSelectedBudget] = useState<Budget | undefined>();
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | undefined>();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [budgets] = useState<Budget[]>([
+  const [budgets, setBudgets] = useState<Budget[]>([
     {
       id: "1",
       category: "Food & Dining",
@@ -77,14 +81,34 @@ const BudgetsPage: React.FC = () => {
     },
   ]);
 
-  const totalAllocated = budgets.reduce(
-    (sum, budget) => sum + budget.allocated,
-    0
-  );
-  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
-  const remaining = totalAllocated - totalSpent;
+  // Derived totals with memoization
+  const { totalAllocated, totalSpent, remaining, overallPct } = useMemo(() => {
+    const totalAllocated = budgets.reduce(
+      (sum, b) => sum + (b.allocated || 0),
+      0
+    );
+    const totalSpent = budgets.reduce((sum, b) => sum + (b.spent || 0), 0);
+    const remaining = totalAllocated - totalSpent;
+    const overallPct =
+      totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+    return { totalAllocated, totalSpent, remaining, overallPct };
+  }, [budgets]);
+
+  // Close dropdown on ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveDropdown(null);
+        setShowBudgetForm(false);
+        setShowDeleteModal(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const getBudgetStatus = (budget: Budget) => {
+    if (!budget.allocated || budget.allocated <= 0) return "good";
     const percentage = (budget.spent / budget.allocated) * 100;
     if (percentage >= 100) return "over";
     if (percentage >= 80) return "warning";
@@ -132,15 +156,40 @@ const BudgetsPage: React.FC = () => {
     setActiveDropdown(null);
   };
 
+  // NOTE: don't override form values (bug fix). Use the form data directly on add/edit.
   const handleBudgetSubmit = (budgetData: Omit<Budget, "id" | "spent">) => {
     if (formMode === "add") {
       const newBudget: Budget = {
         ...budgetData,
-        id: Date.now().toString(),
-        spent: 100,
+        id: crypto.randomUUID?.() || Date.now().toString(),
+        spent: 0,
       };
-      // setGoals([...goals, newGoal]);
+      setBudgets((prev) => [...prev, newBudget]);
+    } else if (selectedBudget) {
+      setBudgets((prev) =>
+        prev.map((b) =>
+          b.id === selectedBudget.id
+            ? {
+                ...b,
+                category: budgetData.category,
+                allocated: budgetData.allocated,
+                period: budgetData.period,
+              }
+            : b
+        )
+      );
     }
+
+    setShowBudgetForm(false);
+    setSelectedBudget(undefined);
+  };
+
+  const confirmDelete = () => {
+    if (budgetToDelete) {
+      setBudgets((prev) => prev.filter((b) => b.id !== budgetToDelete.id));
+      setBudgetToDelete(undefined);
+    }
+    setShowDeleteModal(false);
   };
 
   return (
@@ -163,7 +212,7 @@ const BudgetsPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 group">
         <DashboardCard>
           <div className="flex items-center justify-between">
             <div>
@@ -226,16 +275,11 @@ const BudgetsPage: React.FC = () => {
             <div className="w-full bg-gray-300 rounded-full h-4">
               <div
                 className="bg-blue-500 h-4 rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(
-                    (totalSpent / totalAllocated) * 100,
-                    100
-                  )}%`,
-                }}
+                style={{ width: `${Math.min(overallPct, 100)}%` }}
               />
             </div>
             <div className="text-right text-sm text-gray-600 mt-2">
-              {((totalSpent / totalAllocated) * 100).toFixed(1)}% used
+              {overallPct.toFixed(1)}% used
             </div>
           </div>
         </div>
@@ -245,11 +289,12 @@ const BudgetsPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {budgets.map((budget) => {
           const status = getBudgetStatus(budget);
-          const percentage = (budget.spent / budget.allocated) * 100;
+          const percentage =
+            budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0;
 
           return (
             <DashboardCard key={budget.id}>
-              <div className="space-y-4">
+              <div className="space-y-4 group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div
@@ -291,6 +336,37 @@ const BudgetsPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="relative">
+                  <button
+                    onClick={() =>
+                      setActiveDropdown(
+                        activeDropdown === budget.id ? null : budget.id
+                      )
+                    }
+                    className="p-2 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="w-4 h-4 text-gray-600" />
+                  </button>
+                  {activeDropdown === budget.id && (
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                      <button
+                        onClick={() => handleEditBudget(budget)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBudget(budget)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <ProgressBar
                   label=""
                   current={budget.spent}
@@ -301,7 +377,10 @@ const BudgetsPage: React.FC = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">
                     Remaining: $
-                    {(budget.allocated - budget.spent).toLocaleString()}
+                    {Math.max(
+                      budget.allocated - budget.spent,
+                      0
+                    ).toLocaleString()}
                   </span>
                   <span
                     className={`font-medium ${
@@ -333,48 +412,21 @@ const BudgetsPage: React.FC = () => {
         budget={selectedBudget}
       />
 
-      {/* Budget Tips */}
-      <DashboardCard>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Budget Tips
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="font-medium text-blue-900 mb-2">
-              Track Daily Expenses
-            </h4>
-            <p className="text-sm text-blue-700">
-              Record your expenses daily to stay aware of your spending patterns
-              and avoid budget overruns.
-            </p>
-          </div>
-          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="font-medium text-green-900 mb-2">
-              Set Realistic Goals
-            </h4>
-            <p className="text-sm text-green-700">
-              Create achievable budget limits based on your actual spending
-              history and income.
-            </p>
-          </div>
-          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <h4 className="font-medium text-orange-900 mb-2">Review Monthly</h4>
-            <p className="text-sm text-orange-700">
-              Regularly review and adjust your budgets based on changing
-              circumstances and priorities.
-            </p>
-          </div>
-          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <h4 className="font-medium text-purple-900 mb-2">
-              Emergency Buffer
-            </h4>
-            <p className="text-sm text-purple-700">
-              Always include a small buffer in your budget for unexpected
-              expenses.
-            </p>
-          </div>
-        </div>
-      </DashboardCard>
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Budget"
+        message="This budget will be permanently removed from your account."
+        itemName={budgetToDelete?.category}
+      />
+
+      {activeDropdown && (
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
     </div>
   );
 };
