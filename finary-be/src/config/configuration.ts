@@ -8,6 +8,17 @@ export default registerAs('config', () => ({
     url: process.env.DATABASE_URL,
   },
 
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6380,
+    url: process.env.REDIS_URL || 'redis://localhost:6380',
+  },
+
+  ttl: {
+    accessToken: '15m',
+    refreshToken: '30d',
+  },
+
   jwt: {
     secret: process.env.JWT_SECRET || 'this-my-super-jwt-secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',

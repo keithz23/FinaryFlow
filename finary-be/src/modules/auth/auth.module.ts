@@ -14,6 +14,7 @@ import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { MailService } from '../mail/mail.service';
 import { PermissionService } from './permissions.service';
 import { PermissionModule } from './permissions.module';
+import { RedisService } from 'src/redis/redis.service';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PermissionModule } from './permissions.module';
   providers: [
     AuthService,
     PrismaService,
+    RedisService,
     MailService,
     TokenService,
     JwtStrategy,

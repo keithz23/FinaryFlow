@@ -10,6 +10,7 @@ import { UsersModule } from './modules/users/users.module';
 import { MailModule } from './modules/mail/mail.module';
 import { PermissionModule } from './modules/auth/permissions.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
     PermissionModule,
     PermissionsModule,
     RolesModule,
+    RedisModule,
     UsersModule,
     MailModule,
   ],
