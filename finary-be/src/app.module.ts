@@ -11,6 +11,12 @@ import { MailModule } from './modules/mail/mail.module';
 import { PermissionModule } from './modules/auth/permissions.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { RedisModule } from './redis/redis.module';
+import { BudgetsModule } from './modules/budgets/budgets.module';
+import { TransactionsModule } from './modules/transactions/transactions.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { GoalsModule } from './modules/goals/goals.module';
 
 @Module({
   imports: [
@@ -32,6 +38,12 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     UsersModule,
     MailModule,
+    BudgetsModule,
+    TransactionsModule,
+    CategoriesModule,
+    SettingsModule,
+    ReportsModule,
+    GoalsModule,
   ],
   providers: [AppService],
 })

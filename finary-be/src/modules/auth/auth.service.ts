@@ -257,7 +257,6 @@ export class AuthService {
     try {
       const cached = await this.redisService.get(`user:${userId}`);
       if (cached) {
-        console.log(`cache:::${cached}`);
         return {
           user: JSON.parse(cached),
         };
