@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -30,9 +31,15 @@ export class BudgetsService {
         );
       }
 
-      await this.prisma.budgets.create({
+      const budget = await this.prisma.budgets.create({
         data: { userId, categoryId, amount, period },
+        include: { category: true },
       });
+
+      // Invalidate cache afater successful creation
+      await this.invalidateUserBudgetsCache(userId);
+
+      return budget;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
@@ -48,12 +55,66 @@ export class BudgetsService {
     }
   }
 
-  findAll() {
-    return `This action returns all budgets`;
+  async findAll(userId: string) {
+    const cacheKey = `budgets:${userId}`;
+    try {
+      if (!userId || typeof userId !== 'string') {
+        throw new BadRequestException('Invalid userID');
+      }
+      const cache = await this.redisService.get(cacheKey);
+      if (cache) {
+        return JSON.parse(cache);
+      }
+      const budgets = await this.prisma.budgets.findMany({
+        where: { userId },
+        include: {
+          category: true,
+        },
+      });
+
+      await this.redisService.setWithExpire(
+        cacheKey,
+        JSON.stringify(budgets),
+        3600,
+      );
+
+      return budgets;
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(
+        'An unexpected error occurred while fetching all budgets data',
+      );
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} budget`;
+  async findOne(id: string) {
+    try {
+      if (!id || typeof id !== 'string') {
+        throw new BadRequestException('Invalid budget id');
+      }
+
+      const budget = await this.prisma.budgets.findUnique({
+        where: { id },
+        include: { category: true },
+      });
+
+      if (!budget) {
+        throw new NotFoundException('Budget not found');
+      }
+
+      return budget;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'An unexpected error occurred while fetching budget',
+      );
+    }
   }
 
   async update(id: string, updateBudgetDto: UpdateBudgetDto) {
@@ -91,7 +152,12 @@ export class BudgetsService {
           ...(amount !== undefined && { amount }),
           ...(period !== undefined && { period }),
         },
+        include: { category: true },
       });
+
+      // Invalidate cache after successful update
+      await this.invalidateUserBudgetsCache(existed.userId);
+      
       return updated;
     } catch (error: any) {
       if (error?.code === 'P2025') {
@@ -114,7 +180,49 @@ export class BudgetsService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} budget`;
+  async remove(id: string) {
+    try {
+      if (!id || typeof id !== 'string') {
+        throw new BadRequestException('Invalid budget id');
+      }
+
+      // Get userId before deletion for cache invalidation
+      const budgetToDelete = await this.prisma.budgets.findUnique({
+        where: { id },
+        select: { userId: true },
+      });
+
+      if (!budgetToDelete) {
+        throw new NotFoundException('Budget not found');
+      }
+
+      const deletedBudget = await this.prisma.budgets.delete({
+        where: { id },
+      });
+
+      // Invalidate cache after successful deletion
+      await this.invalidateUserBudgetsCache(budgetToDelete.userId);
+
+      return deletedBudget;
+    } catch (error: any) {
+      if (error?.code === 'P2025') {
+        throw new NotFoundException('Budget not found');
+      }
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'An unexpected error occurred while deleting budget',
+      );
+    }
+  }
+
+  private async invalidateUserBudgetsCache(userId: string) {
+    await this.redisService.del(`budgets:${userId}`);
   }
 }

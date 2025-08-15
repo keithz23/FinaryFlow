@@ -28,22 +28,27 @@ export class BudgetsController {
   }
 
   @Get()
-  findAll() {
-    return this.budgetsService.findAll();
+  @UseGuards(CombinedAuthGuard)
+  findAll(@Req() req: Request) {
+    const userId = (req as any).user.sub;
+    return this.budgetsService.findAll(userId);
   }
 
   @Get(':id')
+  @UseGuards(CombinedAuthGuard)
   findOne(@Param('id') id: string) {
-    return this.budgetsService.findOne(+id);
+    return this.budgetsService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(CombinedAuthGuard)
   update(@Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto) {
     return this.budgetsService.update(id, updateBudgetDto);
   }
 
   @Delete(':id')
+  @UseGuards(CombinedAuthGuard)
   remove(@Param('id') id: string) {
-    return this.budgetsService.remove(+id);
+    return this.budgetsService.remove(id);
   }
 }

@@ -27,25 +27,32 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll() {
-    return this.categoriesService.findAll();
+  @UseGuards(CombinedAuthGuard)
+  findAll(@Req() req: Request) {
+    const userId = (req as any).user.sub;
+    return this.categoriesService.findAll(userId);
   }
 
   @Get(':id')
+  @UseGuards(CombinedAuthGuard)
   findOne(@Param('id') id: string) {
-    return this.categoriesService.findOne(+id);
+    return this.categoriesService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(CombinedAuthGuard)
   update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
+    @Req() req: Request,
   ) {
-    return this.categoriesService.update(+id, updateCategoryDto);
+    const userId = (req as any).user.sub;
+    return this.categoriesService.update(id, userId, updateCategoryDto);
   }
 
   @Delete(':id')
+  @UseGuards(CombinedAuthGuard)
   remove(@Param('id') id: string) {
-    return this.categoriesService.remove(+id);
+    return this.categoriesService.remove(id);
   }
 }
