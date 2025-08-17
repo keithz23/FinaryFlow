@@ -8,18 +8,31 @@ import {
   ArrowDownRight,
   Calendar,
   DollarSign,
+  MoreVertical,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import DashboardCard from "../components/DashboardCard";
 import type { Transaction } from "../types";
+import TransactionForm from "../components/forms/TransactionForm";
+import DeleteConfirmModal from "../components/forms/DeleteConfirmModal";
 
 const TransactionsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
     "all"
   );
-  const [showAddModal, setShowAddModal] = useState(false);
-
-  const transactions: Transaction[] = [
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    Transaction | undefined
+  >();
+  const [transactionToDelete, setTransactionToDelete] = useState<
+    Transaction | undefined
+  >();
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: "1",
       description: "Salary Deposit",
@@ -100,7 +113,72 @@ const TransactionsPage: React.FC = () => {
       type: "income",
       category: "Freelance",
     },
-  ];
+  ]);
+
+  const handleAddTransaction = () => {
+    setFormMode("add");
+    setSelectedTransaction(undefined);
+    setShowTransactionForm(true);
+  };
+
+  const handleEditTransaction = (Transaction: Transaction) => {
+    setFormMode("edit");
+    setSelectedTransaction(Transaction);
+    setShowTransactionForm(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeleteTransaction = (Transaction: Transaction) => {
+    setTransactionToDelete(Transaction);
+    setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleBudgetSubmit = (
+    transactionData: Omit<Transaction, "id" | "spent">
+  ) => {
+    if (formMode === "add") {
+      const newBudget: Transaction = {
+        ...transactionData,
+        id: crypto.randomUUID?.() || Date.now().toString(),
+        amount: 0,
+        type: "expense",
+        date: Date.now().toString(),
+        description: "",
+        category: "",
+      };
+      setTransactions((prev) => [...prev, newBudget]);
+    } else if (selectedTransaction) {
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === selectedTransaction.id
+            ? {
+                ...t,
+                id: t.id,
+                description: t.description,
+                date: t.date,
+                amount: t.amount,
+                category: t.category,
+                type: t.type,
+              }
+            : t
+        )
+      );
+    }
+
+    setShowTransactionForm(false);
+    setSelectedTransaction(undefined);
+  };
+
+  const confirmDelete = () => {
+    if (transactionToDelete) {
+      setTransactions((prev) =>
+        prev.filter((b) => b.id !== transactionToDelete.id)
+      );
+      setTransactionToDelete(undefined);
+    }
+    setShowDeleteModal(false);
+  };
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch =
@@ -134,8 +212,8 @@ const TransactionsPage: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          onClick={handleAddTransaction}
         >
           <Plus className="w-5 h-5" />
           <span>Add Transaction</span>
@@ -282,19 +360,81 @@ const TransactionsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div
-                  className={`font-semibold text-lg ${
-                    transaction.amount > 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {transaction.amount > 0 ? "+" : ""}$
-                  {Math.abs(transaction.amount).toLocaleString()}
+
+                {/* amount + actions */}
+                <div className="flex items-center space-x-4">
+                  <div
+                    className={`font-semibold text-lg ${
+                      transaction.amount > 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {transaction.amount > 0 ? "+" : ""}$
+                    {Math.abs(transaction.amount).toLocaleString()}
+                  </div>
+
+                  {/* actions */}
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setActiveDropdown(
+                          activeDropdown === transaction.id
+                            ? null
+                            : transaction.id
+                        )
+                      }
+                      className="p-2 hover:bg-gray-100 rounded-lg "
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-600" />
+                    </button>
+                    {activeDropdown === transaction.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={() => handleEditTransaction(transaction)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTransaction(transaction)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </DashboardCard>
+
+      <TransactionForm
+        isOpen={showTransactionForm}
+        onClose={() => setShowTransactionForm(false)}
+        onSubmit={handleBudgetSubmit}
+        mode={formMode}
+        transaction={selectedTransaction}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Transaction"
+        message="This transaction will be permanently removed from your account."
+        itemName={transactionToDelete?.category}
+      />
+
+      {activeDropdown && (
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
     </div>
   );
 };

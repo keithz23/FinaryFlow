@@ -17,7 +17,7 @@ export class BudgetsService {
     private redisService: RedisService,
   ) {}
   async create(userId: string, createBudgetDto: CreateBudgetDto) {
-    const { categoryId, amount, period } = createBudgetDto;
+    const { categoryId, allocated, period } = createBudgetDto;
     try {
       const existed = await this.prisma.budgets.findUnique({
         where: {
@@ -32,7 +32,7 @@ export class BudgetsService {
       }
 
       const budget = await this.prisma.budgets.create({
-        data: { userId, categoryId, amount, period },
+        data: { userId, categoryId, allocated, period },
         include: { category: true },
       });
 
@@ -118,7 +118,7 @@ export class BudgetsService {
   }
 
   async update(id: string, updateBudgetDto: UpdateBudgetDto) {
-    const { categoryId, amount, period } = updateBudgetDto;
+    const { categoryId, allocated, period } = updateBudgetDto;
     try {
       const existed = await this.prisma.budgets.findUnique({
         where: { id },
@@ -149,7 +149,7 @@ export class BudgetsService {
         where: { id },
         data: {
           ...(categoryId !== undefined && { categoryId }),
-          ...(amount !== undefined && { amount }),
+          ...(allocated !== undefined && { allocated }),
           ...(period !== undefined && { period }),
         },
         include: { category: true },
@@ -157,7 +157,7 @@ export class BudgetsService {
 
       // Invalidate cache after successful update
       await this.invalidateUserBudgetsCache(existed.userId);
-      
+
       return updated;
     } catch (error: any) {
       if (error?.code === 'P2025') {

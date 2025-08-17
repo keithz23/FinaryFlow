@@ -142,8 +142,9 @@ model Budgets {
 
   category   Category  @relation(fields: [categoryId], references: [id])
   categoryId String
-  amount     Int
   period     Period
+  allocated  Int
+  spent      Float     @default(0)
   date       DateTime?
 
   createdAt DateTime @default(now())

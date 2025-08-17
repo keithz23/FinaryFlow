@@ -341,7 +341,7 @@ const GoalsPage: React.FC = () => {
           return (
             <DashboardCard
               key={goal.id}
-              className="hover:shadow-lg transition-all duration-200 group"
+              className="hover:shadow-lg transition-all duration-200"
             >
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
@@ -373,7 +373,7 @@ const GoalsPage: React.FC = () => {
                             activeDropdown === goal.id ? null : goal.id
                           )
                         }
-                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 hover:bg-gray-200 rounded-lg"
                       >
                         <MoreHorizontal className="w-4 h-4 text-gray-500" />
                       </button>

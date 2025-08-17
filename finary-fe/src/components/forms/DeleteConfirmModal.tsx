@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import React from "react";
+import { X, AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -16,13 +16,19 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onConfirm,
   title,
   message,
-  itemName
+  itemName,
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-40 p-4 h-screen"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
@@ -39,7 +45,9 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Are you sure?</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Are you sure?
+              </h3>
               <p className="text-gray-600 mt-1">{message}</p>
             </div>
           </div>
@@ -57,7 +65,8 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               <div>
                 <h4 className="font-medium text-red-900 mb-1">Warning</h4>
                 <p className="text-sm text-red-700">
-                  This action cannot be undone. The item will be permanently removed from your account.
+                  This action cannot be undone. The item will be permanently
+                  removed from your account.
                 </p>
               </div>
             </div>

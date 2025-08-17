@@ -1,3 +1,5 @@
+import type { Categories } from "./categories/categories";
+
 export interface User {
   id: string;
   name: string;
@@ -10,16 +12,16 @@ export interface Transaction {
   description: string;
   amount: number;
   date: string;
-  type: 'income' | 'expense';
+  type: "income" | "expense";
   category: string;
 }
 
 export interface Budget {
   id: string;
-  category: string;
+  category: Categories;
   allocated: number;
   spent: number;
-  period: 'monthly' | 'weekly' | 'yearly';
+  period: "monthly" | "weekly" | "yearly";
 }
 
 export interface Goal {

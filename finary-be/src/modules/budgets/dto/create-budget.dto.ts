@@ -11,7 +11,7 @@ export class CreateBudgetDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsInt()
-  amount: number;
+  allocated: number;
 
   @ApiProperty()
   @IsNotEmpty()
