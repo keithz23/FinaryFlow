@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { X, DollarSign, Tag, Calendar } from "lucide-react";
 import type { Budget } from "../../types";
 import { useCategories } from "../../hooks/useCategories";
+import { useForm, type SubmitHandler } from "react-hook-form";
 
-// ---- Types ----
-type Period = "monthly" | "weekly" | "yearly";
+// ---- Types ---- //
+type Period = "MONTHLY" | "WEEKLY" | "YEARLY";
 
 export type BudgetUpsertDto = {
   categoryId: string;
@@ -29,47 +30,46 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   budget,
   mode,
 }) => {
-  const [formData, setFormData] = useState({
-    categoryId: budget?.category.id || "",
-    allocated: budget?.allocated != null ? String(budget.allocated) : "",
-    period: budget?.period || ("monthly" as Period),
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Categories
   const { data, isError, isLoading } = useCategories();
   const categories: CategoryItem[] = useMemo(() => data ?? [], [data]);
 
-  // ---- Validate ----
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const defaultValues: BudgetUpsertDto = useMemo(
+    () => ({
+      categoryId: budget?.category?.id ?? "",
+      allocated: typeof budget?.allocated === "number" ? budget!.allocated : 0,
+      period: (budget?.period?.toString().toUpperCase() as Period) ?? "WEEKLY",
+    }),
+    [budget]
+  );
 
-    if (!formData.categoryId) {
-      newErrors.categoryId = "Category is required";
-    }
-    if (!formData.allocated || parseFloat(formData.allocated) <= 0) {
-      newErrors.allocated = "Budget amount must be greater than 0";
-    }
+  // React Hook Form
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<BudgetUpsertDto>({
+    mode: "onChange",
+    defaultValues,
+  });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  useEffect(() => {
+    if (isOpen) reset(defaultValues);
+  }, [isOpen, defaultValues, reset]);
 
-  // ---- Submit ----
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const period = watch("period");
 
+  const onValid: SubmitHandler<BudgetUpsertDto> = (values) => {
     const payload: BudgetUpsertDto = {
-      categoryId: formData.categoryId,
-      allocated: parseFloat(formData.allocated),
-      period: formData.period,
+      categoryId: values.categoryId,
+      allocated: Number(values.allocated),
+      period: values.period,
     };
-
     onSubmit(payload);
-
     onClose();
-    setFormData({ categoryId: "", allocated: "", period: "monthly" });
-    setErrors({});
   };
 
   if (!isOpen) return null;
@@ -90,16 +90,18 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Close"
+            type="button"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onValid)} className="p-6 space-y-6">
           {/* Category */}
           <div>
             <label
-              htmlFor="category"
+              htmlFor="categoryId"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Category
@@ -107,11 +109,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             <div className="relative">
               <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <select
-                id="category"
-                value={formData.categoryId}
-                onChange={(e) =>
-                  setFormData({ ...formData, categoryId: e.target.value })
-                }
+                id="categoryId"
+                {...register("categoryId", {
+                  required: "Category is required",
+                })}
                 disabled={isLoading || isError}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                   errors.categoryId ? "border-red-500" : "border-gray-300"
@@ -121,7 +122,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               >
                 {isLoading && <option>Loading categories...</option>}
                 {isError && <option>Error loading categories</option>}
-                <option value="">Select a category</option>
+                {!isLoading && !isError && (
+                  <option value="">Select a category</option>
+                )}
                 {!isLoading &&
                   !isError &&
                   categories.map((c) => (
@@ -135,7 +138,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               </select>
             </div>
             {errors.categoryId && (
-              <p className="mt-1 text-sm text-red-600">{errors.categoryId}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.categoryId.message}
+              </p>
             )}
           </div>
 
@@ -154,10 +159,14 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
                 type="number"
                 step="0.01"
                 min="0"
-                value={formData.allocated}
-                onChange={(e) =>
-                  setFormData({ ...formData, allocated: e.target.value })
-                }
+                {...register("allocated", {
+                  required: "Budget amount is required",
+                  valueAsNumber: true,
+                  validate: (v) =>
+                    typeof v === "number" && !Number.isNaN(v) && v > 0
+                      ? true
+                      : "Budget amount must be greater than 0",
+                })}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                   errors.allocated ? "border-red-500" : "border-gray-300"
                 }`}
@@ -165,7 +174,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               />
             </div>
             {errors.allocated && (
-              <p className="mt-1 text-sm text-red-600">{errors.allocated}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.allocated.message as string}
+              </p>
             )}
           </div>
 
@@ -175,27 +186,34 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               Budget Period
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {(["weekly", "monthly", "yearly"] as const).map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, period })}
-                  className={`p-3 rounded-lg border-2 transition-all capitalize ${
-                    formData.period === period
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-1">
-                    <Calendar className="w-4 h-4" />
-                    <span className="font-medium text-sm">{period}</span>
-                  </div>
-                </button>
-              ))}
+              {(["weekly", "monthly", "yearly"] as const).map((p) => {
+                const pUpper = p.toUpperCase() as Period;
+                const active = period === pUpper;
+                return (
+                  <button
+                    key={pUpper}
+                    type="button"
+                    onClick={() =>
+                      setValue("period", pUpper, { shouldDirty: true })
+                    }
+                    className={`p-3 rounded-lg border-2 transition-all capitalize ${
+                      active
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    aria-pressed={active}
+                  >
+                    <div className="flex items-center justify-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span className="font-medium text-sm">{p}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Budget Tips */}
+          {/* Tips */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">💡 Budget Tips</h4>
             <ul className="text-sm text-blue-700 space-y-1">
@@ -205,18 +223,20 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
             </ul>
           </div>
 
-          {/* Form Actions */}
+          {/* Actions */}
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60"
+              disabled={isSubmitting}
             >
               {mode === "add" ? "Create Budget" : "Update Budget"}
             </button>

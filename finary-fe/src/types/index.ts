@@ -21,7 +21,7 @@ export interface Budget {
   category: Categories;
   allocated: number;
   spent: number;
-  period: "monthly" | "weekly" | "yearly";
+  period: "MONTHLY" | "WEEKLY" | "YEARLY";
 }
 
 export interface Goal {

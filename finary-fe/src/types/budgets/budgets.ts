@@ -3,14 +3,14 @@ import type { Categories } from "../categories/categories";
 
 export interface Budgets {
   id: string;
-  amount: string;
+  allocated: number;
   period: string;
   category: Categories;
 }
 
 export interface CreateBudget {
   categoryId: string;
-  amount: string;
+  allocated: number;
   period: Period;
 }
 

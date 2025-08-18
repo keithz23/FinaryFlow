@@ -17,7 +17,12 @@ import BudgetForm, {
   type BudgetUpsertDto,
 } from "../components/forms/BudgetForm";
 import DeleteConfirmModal from "../components/forms/DeleteConfirmModal";
-import { useBudgets } from "../hooks/useBudgets";
+import {
+  useBudgets,
+  useCreateBudget,
+  useDeleteBudget,
+  useUpdateBudget,
+} from "../hooks/useBudgets";
 
 const BudgetsPage: React.FC = () => {
   const [showBudgetForm, setShowBudgetForm] = useState(false);
@@ -27,7 +32,11 @@ const BudgetsPage: React.FC = () => {
   const [budgetToDelete, setBudgetToDelete] = useState<Budget | undefined>();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  // Handle budget data from hooks
   const { data, isLoading, isError, error, refetch } = useBudgets();
+  const createBudget = useCreateBudget();
+  const updateBudget = useUpdateBudget();
+  const deletedBudget = useDeleteBudget();
   const budgets: Budget[] = useMemo(() => data ?? [], [data]);
 
   // Derived totals with memoization
@@ -99,18 +108,29 @@ const BudgetsPage: React.FC = () => {
     setActiveDropdown(null);
   };
 
-  const handleDeleteBudget = (budget: Budget) => {
+  const handleDeleteBudget = async (budget: Budget) => {
     setBudgetToDelete(budget);
     setShowDeleteModal(true);
     setActiveDropdown(null);
   };
 
-  const handleBudgetSubmit = (budgetData: BudgetUpsertDto) => {
+  const handleBudgetSubmit = async (budgetData: BudgetUpsertDto) => {
+    if (formMode === "add") {
+      await createBudget.mutateAsync(budgetData);
+    } else if (selectedBudget) {
+      await updateBudget.mutateAsync({
+        id: selectedBudget.id,
+        payload: budgetData,
+      });
+    }
     setShowBudgetForm(false);
     setSelectedBudget(undefined);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
+    if (budgetToDelete) {
+      await deletedBudget.mutateAsync(budgetToDelete.id);
+    }
     setShowDeleteModal(false);
   };
 

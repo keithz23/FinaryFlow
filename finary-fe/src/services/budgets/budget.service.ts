@@ -17,7 +17,7 @@ export const budgetService = {
   },
 
   updateBudget: (id: string, payload: UpdateBudget) => {
-    return instance.put(buildUrl(ApiEndpoint.UPDATE_BUDGET, { id }), payload);
+    return instance.patch(buildUrl(ApiEndpoint.UPDATE_BUDGET, { id }), payload);
   },
 
   deleteBudget: (id: string) => {

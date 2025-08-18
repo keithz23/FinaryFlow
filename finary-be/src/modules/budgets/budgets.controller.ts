@@ -23,7 +23,6 @@ export class BudgetsController {
   @UseGuards(CombinedAuthGuard)
   create(@Body() createBudgetDto: CreateBudgetDto, @Req() req: Request) {
     const userId = (req as any).user.sub;
-    console.log(userId);
     return this.budgetsService.create(userId, createBudgetDto);
   }
 
