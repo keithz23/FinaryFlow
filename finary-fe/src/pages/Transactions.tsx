@@ -352,12 +352,11 @@ const TransactionsPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end mt-2">
             <Pagination
               count={totalPages}
               page={page}
               onChange={handlePageChange}
-              className="mt-2"
             />
           </div>
         </div>
