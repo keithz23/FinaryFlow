@@ -8,6 +8,7 @@ import {
   Delete,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -32,8 +33,8 @@ export class TransactionsController {
   @UseGuards(CombinedAuthGuard)
   @Get()
   findAll(
-    @Param('page') page: number = 1,
-    @Param('limit') limit: number = 10,
+    @Query('page') page: number,
+    @Query('limit') limit: number = 10,
     @Req() req: Request,
   ) {
     const userId = (req as any).user.sub;

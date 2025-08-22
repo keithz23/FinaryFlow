@@ -18,6 +18,13 @@ export const ApiEndpoint = {
   CREATE_CATEGORY: "/categories",
   UPDATE_CATEGORY: "/categories/{id}",
   DELETE_CATEGORY: "/categories/{id}",
+
+  //=========Transaction=========//
+  FIND_ALL_TRANSACTIONS: "/transactions",
+  FIND_ONE_TRANSACTION: "/categories/{id}",
+  CREATE_TRANSACTION: "/categories",
+  UPDATE_TRANSACTION: "/categories/{id}",
+  DELETE_TRANSACTION: "/categories/{id}",
 } as const;
 
 export type ApiEndpoint = (typeof ApiEndpoint)[keyof typeof ApiEndpoint];

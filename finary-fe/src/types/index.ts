@@ -9,11 +9,20 @@ export interface User {
 
 export interface Transaction {
   id: string;
-  description: string;
   amount: number;
+  category: {
+    id: string;
+    userId: string;
+    color: string;
+    description: string;
+    name: string;
+    icon: string;
+  };
+  categoryId: string;
+  createdAt: string;
   date: string;
-  type: "income" | "expense";
-  category: string;
+  description: string;
+  type: "EXPENSE" | "INCOME";
 }
 
 export interface Budget {
