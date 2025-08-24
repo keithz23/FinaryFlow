@@ -16,9 +16,15 @@ import DashboardCard from "../components/DashboardCard";
 import type { Transaction } from "../types";
 import TransactionForm from "../components/forms/TransactionForm";
 import DeleteConfirmModal from "../components/forms/DeleteConfirmModal";
-import { useTransactions } from "../hooks/useTransactions";
+import {
+  useCreateTransaction,
+  useDeleteTransaction,
+  useTransactions,
+  useUpdateTransaction,
+} from "../hooks/useTransactions";
 import { formatDateWithTimezone } from "../utils/format.util";
 import { Pagination } from "@mui/material";
+import type { CreateTransaction } from "../types/transactions/transactions";
 
 type TxType = "all" | "INCOME" | "EXPENSE";
 
@@ -33,6 +39,9 @@ const TransactionsPage: React.FC = () => {
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction>();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
+  const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
+  const deleteTransacion = useDeleteTransaction();
   const { data, isLoading, isError } = useTransactions(page, 10);
 
   const rawList = (data as any)?.transactions ?? (data as any)?.data ?? [];
@@ -64,15 +73,22 @@ const TransactionsPage: React.FC = () => {
     setActiveDropdown(null);
   };
 
-  const handleTransactionSubmit = (
-    payload: Omit<Transaction, "id" | "spent">
-  ) => {
+  const handleTransactionSubmit = async (tx: CreateTransaction) => {
+    if (formMode == "add") {
+      await createTransaction.mutateAsync(tx);
+    } else if (selectedTransaction) {
+      await updateTransaction.mutateAsync({
+        id: selectedTransaction.id,
+        payload: tx,
+      });
+    }
     setShowTransactionForm(false);
     setSelectedTransaction(undefined);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (transactionToDelete) {
+      await deleteTransacion.mutateAsync(transactionToDelete.id);
       setTransactionToDelete(undefined);
     }
     setShowDeleteModal(false);
@@ -100,24 +116,6 @@ const TransactionsPage: React.FC = () => {
       return matchesSearch && matchesFilter;
     });
   }, [transactions, searchTerm, filterType]);
-
-  const { totalIncome, totalExpenses, netFlow } = useMemo(() => {
-    const income = transactions
-      .filter((t) => t.type === "INCOME")
-      .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-
-    const expensesAbs = Math.abs(
-      transactions
-        .filter((t) => t.type === "EXPENSE")
-        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
-    );
-
-    return {
-      totalIncome: income,
-      totalExpenses: expensesAbs,
-      netFlow: income - expensesAbs,
-    };
-  }, [transactions]);
 
   if (isLoading) {
     return (
@@ -163,7 +161,7 @@ const TransactionsPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Income</p>
               <p className="text-2xl font-bold text-green-600">
-                ${totalIncome.toLocaleString()}
+                ${data?.totalIncome.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
@@ -179,7 +177,7 @@ const TransactionsPage: React.FC = () => {
                 Total Expenses
               </p>
               <p className="text-2xl font-bold text-red-600">
-                ${totalExpenses.toLocaleString()}
+                ${data?.totalExpense.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
@@ -194,20 +192,20 @@ const TransactionsPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Net Flow</p>
               <p
                 className={`text-2xl font-bold ${
-                  netFlow >= 0 ? "text-green-600" : "text-red-600"
+                  data?.netFlow >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                ${Math.abs(netFlow).toLocaleString()}
+                ${Math.abs(data?.netFlow).toLocaleString()}
               </p>
             </div>
             <div
               className={`p-3 rounded-lg ${
-                netFlow >= 0 ? "bg-green-100" : "bg-red-100"
+                data?.netFlow >= 0 ? "bg-green-100" : "bg-red-100"
               }`}
             >
               <DollarSign
                 className={`w-6 h-6 ${
-                  netFlow >= 0 ? "text-green-600" : "text-red-600"
+                  data?.netFlow >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               />
             </div>

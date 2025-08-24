@@ -130,6 +130,7 @@ const BudgetsPage: React.FC = () => {
   const confirmDelete = async () => {
     if (budgetToDelete) {
       await deletedBudget.mutateAsync(budgetToDelete.id);
+      setSelectedBudget(undefined);
     }
     setShowDeleteModal(false);
   };

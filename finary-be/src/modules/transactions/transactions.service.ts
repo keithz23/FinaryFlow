@@ -9,6 +9,7 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
 import { Prisma, Transaction, Category } from '@prisma/client';
+import { FindAllFilters, TxType } from './types/Transaction';
 
 @Injectable()
 export class TransactionsService {
@@ -71,25 +72,77 @@ export class TransactionsService {
     page: number,
     limit: number,
     userId: string,
-  ): Promise<PaginationResult<Transaction & { category: Category }>> {
+    filters: FindAllFilters = {},
+  ): Promise<{
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    data: (Transaction & { category: Category })[];
+    report: {
+      income: number;
+      expense: number;
+      net: number;
+      byCategory: { categoryId: string; total: number }[];
+    };
+  }> {
     const skip = (page - 1) * limit;
+    const where: any = { userId };
+
+    if (filters.type) where.type = filters.type;
+    if (filters.categoryId) where.categoryId = filters.categoryId;
+
+    if (filters.dateFrom || filters.dateTo) {
+      where.date = {};
+      if (filters.dateFrom) where.date.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) where.date.lte = new Date(filters.dateTo);
+    }
+
     try {
-      const [transactionData, total] = await Promise.all([
-        this.prisma.transaction.findMany({
-          where: { userId },
-          skip,
-          take: limit,
-          include: { category: true },
-          orderBy: { date: 'desc' },
-        }),
-        this.prisma.transaction.count({ where: { userId } }),
-      ]);
+      const [transactionData, totalItems, sumIncome, sumExpense] =
+        await this.prisma.$transaction([
+          this.prisma.transaction.findMany({
+            where,
+            skip,
+            take: limit,
+            include: { category: true },
+            orderBy: { date: 'desc' },
+          }),
+          this.prisma.transaction.count({ where }),
+          this.prisma.transaction.aggregate({
+            where: { ...where, type: 'INCOME' as TxType },
+            _sum: { amount: true },
+          }),
+          this.prisma.transaction.aggregate({
+            where: { ...where, type: 'EXPENSE' as TxType },
+            _sum: { amount: true },
+          }),
+        ]);
+
+      const byCategory = await this.prisma.transaction.groupBy({
+        by: ['categoryId'],
+        where,
+        _sum: { amount: true },
+      });
+
+      const income = Number(sumIncome._sum.amount ?? 0);
+      const expense = Number(sumExpense._sum.amount ?? 0);
 
       return {
         currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
+        totalPages: Math.max(1, Math.ceil(totalItems / limit)),
+        totalItems,
         data: transactionData,
+        report: {
+          income,
+          expense,
+          net: income - expense,
+          byCategory: byCategory
+            .map((r) => ({
+              categoryId: r.categoryId,
+              total: Number(r._sum.amount ?? 0),
+            }))
+            .sort((a, b) => b.total - a.total),
+        },
       };
     } catch (error) {
       console.error('Transaction find all error:', error);
@@ -104,7 +157,7 @@ export class TransactionsService {
         throw error;
       }
       throw new InternalServerErrorException(
-        'An unexpected error occurred while fetching all transaction',
+        'An unexpected error occurred while fetching transactions', // Fixed: grammar
       );
     }
   }

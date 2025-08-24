@@ -48,16 +48,19 @@ export class TransactionsController {
     return this.transactionsService.findOne(id, userId);
   }
 
+  @UseGuards(CombinedAuthGuard)
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Req() req: Request,
     @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
+    console.log(updateTransactionDto)
     const userId = (req as any).user.sub;
     return this.transactionsService.update(id, userId, updateTransactionDto);
   }
 
+  @UseGuards(CombinedAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: Request) {
     const userId = (req as any).user.sub;
