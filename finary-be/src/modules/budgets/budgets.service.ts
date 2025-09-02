@@ -80,7 +80,7 @@ export class BudgetsService {
       await this.redisService.setWithExpire(
         cacheKey,
         JSON.stringify(budgets),
-        3600,
+        600,
       );
 
       return budgets;

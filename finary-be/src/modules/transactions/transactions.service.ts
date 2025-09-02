@@ -27,7 +27,7 @@ export class TransactionsService {
           where: { userId, categoryId },
         });
 
-        if (!budget) {
+        if (!budget && type == 'EXPENSE') {
           throw new NotFoundException('Budget not found for this category');
         }
 
@@ -89,6 +89,7 @@ export class TransactionsService {
     const where: any = { userId };
 
     if (filters.type) where.type = filters.type;
+    console.log(filters.type);
     if (filters.categoryId) where.categoryId = filters.categoryId;
 
     if (filters.dateFrom || filters.dateTo) {

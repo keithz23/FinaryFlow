@@ -4,6 +4,7 @@ import type { Transaction } from "../../types";
 import type { CreateTransaction } from "../../types/transactions/transactions";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useCategories } from "../../hooks/useCategories";
+import { useBudgets } from "../../hooks/useBudgets";
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   mode,
 }) => {
   const { data: categoriesData, isError, isLoading } = useCategories();
+  const { data: budgetCategoriesData } = useBudgets();
 
   const defaultValues: CreateTransaction = useMemo(
     () => ({
@@ -61,8 +63,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const availCategories = useMemo(() => {
     if (!categoriesData) return [];
+
+    if (watchType === "EXPENSE" && Array.isArray(budgetCategoriesData)) {
+      return budgetCategoriesData.map((budget) => budget.category);
+    }
+
     return Array.isArray(categoriesData) ? categoriesData : [];
-  }, [categoriesData]);
+  }, [categoriesData, budgetCategoriesData, watchType]);
 
   const onValid: SubmitHandler<CreateTransaction> = (values) => {
     const payload: CreateTransaction = {

@@ -15,6 +15,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import Request from 'express';
 import { CombinedAuthGuard } from '../auth/guards/combined.guard';
+import { FindAllTransactionsDto } from './dto/findall-transaction.dto';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -32,13 +33,14 @@ export class TransactionsController {
 
   @UseGuards(CombinedAuthGuard)
   @Get()
-  findAll(
-    @Query('page') page: number,
-    @Query('limit') limit: number = 10,
-    @Req() req: Request,
-  ) {
+  findAll(@Query() dto: FindAllTransactionsDto, @Req() req: Request) {
+    const { page = 1, limit = 10, type, ...restFilters } = dto;
     const userId = (req as any).user.sub;
-    return this.transactionsService.findAll(page, limit, userId);
+    const filters = {
+      ...restFilters,
+      ...(type ? { type: type as any } : {}),
+    };
+    return this.transactionsService.findAll(page, limit, userId, filters);
   }
 
   @UseGuards(CombinedAuthGuard)
@@ -55,7 +57,6 @@ export class TransactionsController {
     @Req() req: Request,
     @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
-    console.log(updateTransactionDto)
     const userId = (req as any).user.sub;
     return this.transactionsService.update(id, userId, updateTransactionDto);
   }

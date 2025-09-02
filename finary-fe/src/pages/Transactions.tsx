@@ -259,104 +259,123 @@ const TransactionsPage: React.FC = () => {
           </h3>
 
           <div className="space-y-3 h-[25rem] overflow-y-auto">
-            {filteredTransactions.map((transaction) => (
-              <div key={transaction.id}>
-                <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        transaction.type === "INCOME"
-                          ? "bg-green-100"
-                          : "bg-red-100"
-                      }`}
-                    >
-                      {transaction.type === "INCOME" ? (
-                        <ArrowUpRight className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <ArrowDownRight className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {transaction.description}
-                      </p>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span>
-                          {transaction.category?.name ?? "Uncategorized"}
-                        </span>
-                        <span>•</span>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map((transaction) => (
+                <div key={transaction.id}>
+                  <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100">
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`p-2 rounded-lg ${
+                          transaction.type === "INCOME"
+                            ? "bg-green-100"
+                            : "bg-red-100"
+                        }`}
+                      >
+                        {transaction.type === "INCOME" ? (
+                          <ArrowUpRight className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <ArrowDownRight className="w-5 h-5 text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {transaction.description}
+                        </p>
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
                           <span>
-                            {formatDateWithTimezone(transaction.date)}
+                            {transaction.category?.name ?? "Uncategorized"}
                           </span>
+                          <span>•</span>
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>
+                              {formatDateWithTimezone(transaction.date)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* amount + actions */}
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`font-semibold text-lg ${
-                        (transaction.type === "INCOME" ? 1 : -1) *
-                          transaction.amount >
-                        0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {transaction.type === "INCOME" ? "+" : "-"}$
-                      {Math.abs(
-                        Number(transaction.amount) || 0
-                      ).toLocaleString()}
-                    </div>
-
-                    {/* actions */}
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setActiveDropdown(
-                            activeDropdown === transaction.id
-                              ? null
-                              : transaction.id
-                          )
-                        }
-                        className="p-2 hover:bg-gray-100 rounded-lg "
+                    {/* amount + actions */}
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`font-semibold text-lg ${
+                          (transaction.type === "INCOME" ? 1 : -1) *
+                            transaction.amount >
+                          0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
                       >
-                        <MoreVertical className="w-4 h-4 text-gray-600" />
-                      </button>
-                      {activeDropdown === transaction.id && (
-                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
-                          <button
-                            onClick={() => handleEditTransaction(transaction)}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction)}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
-                        </div>
-                      )}
+                        {transaction.type === "INCOME" ? "+" : "-"}$
+                        {Math.abs(
+                          Number(transaction.amount) || 0
+                        ).toLocaleString()}
+                      </div>
+
+                      {/* actions */}
+                      <div className="relative">
+                        <button
+                          onClick={() =>
+                            setActiveDropdown(
+                              activeDropdown === transaction.id
+                                ? null
+                                : transaction.id
+                            )
+                          }
+                          className="p-2 hover:bg-gray-100 rounded-lg "
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-600" />
+                        </button>
+                        {activeDropdown === transaction.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                            <button
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDeleteTransaction(transaction)
+                              }
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <Calendar className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="font-bold text-xl text-gray-900 mb-2">
+                  No transactions found
+                </h3>
+                <p className="text-gray-600 max-w-sm">
+                  You haven't added any transactions yet. Start tracking your
+                  finances by adding your first transaction.
+                </p>
               </div>
-            ))}
+            )}
           </div>
-          <div className="flex items-center justify-end mt-2">
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePageChange}
-            />
-          </div>
+          {filteredTransactions.length > 0 && (
+            <div className="flex items-center justify-end mt-2">
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePageChange}
+              />
+            </div>
+          )}
         </div>
       </DashboardCard>
 
