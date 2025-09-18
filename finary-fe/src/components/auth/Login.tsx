@@ -144,6 +144,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton
+                  tabIndex={-1}
                   onClick={() => setShowPassword(!showPassword)}
                   edge="end"
                 >
@@ -164,9 +165,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
         >
           <FormControlLabel
             control={<Checkbox color="primary" />}
+            tabIndex={-1}
             label="Remember me"
           />
-          <Button variant="text" size="small" color="primary">
+          <Button variant="text" size="small" color="primary" tabIndex={-1}>
             Forgot password?
           </Button>
         </div>

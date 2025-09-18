@@ -6,13 +6,25 @@ import {
   DollarSign,
   TrendingUp,
   Star,
+  Edit,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import type { Goal } from "../types";
 import DashboardCard from "../components/DashboardCard";
-import ProgressBar from "../components/Progressbar";
+import GoalForm from "../components/forms/GoalForm";
+import DeleteConfirmModal from "../components/forms/DeleteConfirmModal";
+import ProgressBar from "../components/ProgressBar";
 
 const GoalsPage: React.FC = () => {
-  const [goals] = useState<Goal[]>([
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [selectedGoal, setSelectedGoal] = useState<Goal | undefined>();
+  const [goalToDelete, setGoalToDelete] = useState<Goal | undefined>();
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  const [goals, setGoals] = useState<Goal[]>([
     {
       id: "1",
       name: "Emergency Fund",
@@ -138,6 +150,55 @@ const GoalsPage: React.FC = () => {
     }
   };
 
+  const handleAddGoal = () => {
+    setFormMode("add");
+    setSelectedGoal(undefined);
+    setShowGoalForm(true);
+  };
+
+  const handleEditGoal = (goal: Goal) => {
+    setFormMode("edit");
+    setSelectedGoal(goal);
+    setShowGoalForm(true);
+    setActiveDropdown(null);
+  };
+
+  const handleDeleteGoal = (goal: Goal) => {
+    setGoalToDelete(goal);
+    setShowDeleteModal(true);
+    setActiveDropdown(null);
+  };
+
+  const handleGoalSubmit = (goalData: Omit<Goal, "id" | "currentAmount">) => {
+    if (formMode === "add") {
+      const newGoal: Goal = {
+        ...goalData,
+        id: Date.now().toString(),
+        currentAmount: 0,
+      };
+      setGoals([...goals, newGoal]);
+    } else if (selectedGoal) {
+      setGoals(
+        goals.map((g) =>
+          g.id === selectedGoal.id
+            ? {
+                ...goalData,
+                id: selectedGoal.id,
+                currentAmount: selectedGoal.currentAmount,
+              }
+            : g
+        )
+      );
+    }
+  };
+
+  const confirmDelete = () => {
+    if (goalToDelete) {
+      setGoals(goals.filter((g) => g.id !== goalToDelete.id));
+      setGoalToDelete(undefined);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -148,7 +209,10 @@ const GoalsPage: React.FC = () => {
             Track your progress towards financial milestones
           </p>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+        <button
+          onClick={handleAddGoal}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+        >
           <Plus className="w-5 h-5" />
           <span>Add Goal</span>
         </button>
@@ -210,6 +274,25 @@ const GoalsPage: React.FC = () => {
           </div>
         </DashboardCard>
       </div>
+
+      {/* Goal Form Modal */}
+      <GoalForm
+        isOpen={showGoalForm}
+        onClose={() => setShowGoalForm(false)}
+        onSubmit={handleGoalSubmit}
+        goal={selectedGoal}
+        mode={formMode}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Goal"
+        message="This goal will be permanently removed from your account."
+        itemName={goalToDelete?.name}
+      />
 
       {/* Overall Progress */}
       <DashboardCard>
@@ -273,13 +356,48 @@ const GoalsPage: React.FC = () => {
                       <p className="text-sm text-gray-600">{goal.category}</p>
                     </div>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      status
-                    )}`}
-                  >
-                    {getStatusText(status)}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        status
+                      )}`}
+                    >
+                      {getStatusText(status)}
+                    </span>
+
+                    {/* Action Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setActiveDropdown(
+                            activeDropdown === goal.id ? null : goal.id
+                          )
+                        }
+                        className="p-2 hover:bg-gray-200 rounded-lg"
+                      >
+                        <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                      </button>
+
+                      {activeDropdown === goal.id && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                          <button
+                            onClick={() => handleEditGoal(goal)}
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+                          >
+                            <Edit className="w-4 h-4" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGoal(goal)}
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -372,8 +490,14 @@ const GoalsPage: React.FC = () => {
           </div>
         </div>
       </DashboardCard>
+
+      {activeDropdown && (
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => setActiveDropdown(null)}
+        />
+      )}
     </div>
   );
 };
-
 export default GoalsPage;

@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "public"."TransactionType" AS ENUM ('INCOME', 'EXPENSE');
 
+-- CreateEnum
+CREATE TYPE "public"."Period" AS ENUM ('WEEKLY', 'MONTHLY', 'YEARLY');
+
 -- CreateTable
 CREATE TABLE "public"."users" (
     "id" TEXT NOT NULL,
@@ -89,13 +92,41 @@ CREATE TABLE "public"."role_permissions" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."budgets" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "categoryId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "period" "public"."Period" NOT NULL,
+    "allocated" INTEGER NOT NULL DEFAULT 0,
+    "spent" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "date" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "budgets_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."goals" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "amount" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "categoryId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "goals_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."transaction" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "categoryId" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
     "type" "public"."TransactionType" NOT NULL,
-    "note" TEXT,
+    "description" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -103,14 +134,15 @@ CREATE TABLE "public"."transaction" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."cateegory" (
+CREATE TABLE "public"."category" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "color" TEXT,
     "icon" TEXT,
+    "description" TEXT NOT NULL,
 
-    CONSTRAINT "cateegory_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "category_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -140,6 +172,12 @@ CREATE UNIQUE INDEX "user_roles_user_id_role_id_key" ON "public"."user_roles"("u
 -- CreateIndex
 CREATE UNIQUE INDEX "role_permissions_role_id_permission_id_key" ON "public"."role_permissions"("role_id", "permission_id");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "budgets_userId_categoryId_period_key" ON "public"."budgets"("userId", "categoryId", "period");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "category_name_key" ON "public"."category"("name");
+
 -- AddForeignKey
 ALTER TABLE "public"."refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -159,10 +197,22 @@ ALTER TABLE "public"."role_permissions" ADD CONSTRAINT "role_permissions_role_id
 ALTER TABLE "public"."role_permissions" ADD CONSTRAINT "role_permissions_permission_id_fkey" FOREIGN KEY ("permission_id") REFERENCES "public"."permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."budgets" ADD CONSTRAINT "budgets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."budgets" ADD CONSTRAINT "budgets_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."goals" ADD CONSTRAINT "goals_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."goals" ADD CONSTRAINT "goals_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."transaction" ADD CONSTRAINT "transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."transaction" ADD CONSTRAINT "transaction_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."cateegory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."transaction" ADD CONSTRAINT "transaction_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."cateegory" ADD CONSTRAINT "cateegory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."category" ADD CONSTRAINT "category_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

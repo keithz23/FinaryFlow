@@ -32,6 +32,8 @@ model User {
   userRoles     UserRole[]
   Transaction   Transaction[]
   Category      Category[]
+  Budgets       Budgets[]
+  Goals         Goals[]
 
   @@map("users")
 }
@@ -133,34 +135,85 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-model Transaction {
-  id         String          @id @default(uuid())
-  user       User            @relation(fields: [userId], references: [id])
-  userId     String
-  category   Category        @relation(fields: [categoryId], references: [id])
+model Budgets {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  category   Category  @relation(fields: [categoryId], references: [id])
   categoryId String
-  amount     Float
-  type       TransactionType
-  note       String?
-  date       DateTime
-  createdAt  DateTime        @default(now())
+  period     Period
+  allocated  Int
+  spent      Float     @default(0)
+  date       DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, categoryId, period], name: "userId_categoryId_period_unique")
+  @@map("budgets")
+}
+
+model Goals {
+  id     String   @id @default(cuid())
+  user   User     @relation(fields: [userId], references: [id])
+  userId String
+  name   String
+  amount String
+  date   DateTime
+
+  Category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  createdAt DateTime @default(now())
+
+  @@map("goals")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id])
+  userId      String
+  category    Category        @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  amount      Float
+  type        TransactionType
+  description String
+  date        DateTime
+  createdAt   DateTime        @default(now())
 
   @@map("transaction")
 }
 
 model Category {
-  id           String        @id @default(uuid())
+  id           String        @id @default(cuid())
   user         User          @relation(fields: [userId], references: [id])
   userId       String
-  name         String
+  name         String        @unique
   color        String?
   icon         String?
+  description  String
+  type         Type
   transactions Transaction[]
+  budgets      Budgets[]
+  goals        Goals[]
 
-  @@map("cateegory")
+  @@map("category")
 }
 
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+enum Period {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum Type {
+  expense
+  income
+  goal
+  budget
 }

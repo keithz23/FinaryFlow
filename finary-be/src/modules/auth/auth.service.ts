@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -16,6 +17,7 @@ import { MailService } from '../mail/mail.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +26,7 @@ export class AuthService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private mailService: MailService,
+    private redisService: RedisService,
   ) {}
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const existingUser = await this.prisma.user.findUnique({
@@ -31,7 +34,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('User already exists');
+      throw new ConflictException('Email already exists');
     }
 
     const saltRounds = this.configService.get(
@@ -96,6 +99,13 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Cache user info in Redis
+    await this.redisService.setWithExpire(
+      `user:${user.id}`,
+      JSON.stringify(user),
+      900,
+    );
 
     // Update last login
     await this.prisma.user.update({
@@ -245,6 +255,12 @@ export class AuthService {
 
   async me(userId: string) {
     try {
+      const cached = await this.redisService.get(`user:${userId}`);
+      if (cached) {
+        return {
+          user: JSON.parse(cached),
+        };
+      }
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
@@ -252,6 +268,12 @@ export class AuthService {
       if (!user) {
         throw new NotFoundException('User not found');
       }
+
+      await this.redisService.setWithExpire(
+        `user:${user.id}`,
+        JSON.stringify(user),
+        900,
+      );
 
       return {
         user: user,

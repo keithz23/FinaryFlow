@@ -193,6 +193,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
+                    tabIndex={-1}
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
                   >
@@ -230,6 +231,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onToggleMode }) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
+                    tabIndex={-1}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
                   >
