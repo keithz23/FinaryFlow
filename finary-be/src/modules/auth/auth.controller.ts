@@ -26,6 +26,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SoftAuthGuard } from './guards/soft-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
+import { UserEntity } from 'src/common/interfaces';
 
 const clientUrl =
   process.env.NODE_ENV == 'development'
@@ -128,8 +130,7 @@ export class AuthController {
     status: 200,
     description: '',
   })
-  async checkAuth(@Req() req: Request) {
-    const user = (req as any).user;
+  async checkAuth(@GetUser() user: UserEntity) {
     if (user) {
       return {
         isAuthenticated: true,
@@ -145,8 +146,7 @@ export class AuthController {
 
   @Get('redirect')
   @UseGuards(AuthGuard('google'))
-  async googleRedirect(@Req() req: Request, @Res() res: Response) {
-    const user = (req as any).user;
+  async googleRedirect(@GetUser() user: UserEntity, @Res() res: Response) {
     const response = await this.tokenService.generateTokens(user);
 
     res.cookie('accessToken', response.accessToken, {
@@ -175,8 +175,8 @@ export class AuthController {
     status: 200,
     description: 'User successfully logged out',
   })
-  async logout(@Req() req: Request, @Res() res: Response) {
-    await this.authService.logout((req as any).user.id);
+  async logout(@GetUser('sub') userId: string, @Res() res: Response) {
+    await this.authService.logout(userId);
 
     res.clearCookie('accessToken', {
       httpOnly: true,
@@ -209,16 +209,14 @@ export class AuthController {
   @Post('change-password')
   async changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
-    @Req() req: Request,
+    @GetUser('sub') userId: string,
   ) {
-    const userId = (req as any).user.sub;
     return this.authService.changePassword(changePasswordDto, userId);
   }
 
   @UseGuards(CombinedAuthGuard)
   @Post('me')
-  async me(@Req() req: Request) {
-    const user = (req as any).user.sub;
-    return this.authService.me(user);
+  async me(@Req() req: Request, @GetUser('sub') userId: string) {
+    return this.authService.me(userId);
   }
 }

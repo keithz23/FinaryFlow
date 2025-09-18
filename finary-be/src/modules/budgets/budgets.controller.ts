@@ -14,6 +14,7 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CombinedAuthGuard } from '../auth/guards/combined.guard';
 import { Request } from 'express';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
 
 @Controller('budgets')
 export class BudgetsController {
@@ -21,15 +22,16 @@ export class BudgetsController {
 
   @Post()
   @UseGuards(CombinedAuthGuard)
-  create(@Body() createBudgetDto: CreateBudgetDto, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+  create(
+    @Body() createBudgetDto: CreateBudgetDto,
+    @GetUser('sub') userId: string,
+  ) {
     return this.budgetsService.create(userId, createBudgetDto);
   }
 
   @Get()
   @UseGuards(CombinedAuthGuard)
-  findAll(@Req() req: Request) {
-    const userId = (req as any).user.sub;
+  findAll(@GetUser('sub') userId: string) {
     return this.budgetsService.findAll(userId);
   }
 

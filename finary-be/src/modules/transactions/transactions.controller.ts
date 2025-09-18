@@ -16,6 +16,7 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import Request from 'express';
 import { CombinedAuthGuard } from '../auth/guards/combined.guard';
 import { FindAllTransactionsDto } from './dto/findall-transaction.dto';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -25,17 +26,18 @@ export class TransactionsController {
   @Post()
   create(
     @Body() createTransactionDto: CreateTransactionDto,
-    @Req() req: Request,
+    @GetUser('sub') userId: string,
   ) {
-    const userId = (req as any).user.sub;
     return this.transactionsService.create(createTransactionDto, userId);
   }
 
   @UseGuards(CombinedAuthGuard)
   @Get()
-  findAll(@Query() dto: FindAllTransactionsDto, @Req() req: Request) {
+  findAll(
+    @Query() dto: FindAllTransactionsDto,
+    @GetUser('sub') userId: string,
+  ) {
     const { page = 1, limit = 10, type, ...restFilters } = dto;
-    const userId = (req as any).user.sub;
     const filters = {
       ...restFilters,
       ...(type ? { type: type as any } : {}),
@@ -54,10 +56,9 @@ export class TransactionsController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Req() req: Request,
     @Body() updateTransactionDto: UpdateTransactionDto,
+    @GetUser('sub') userId: string,
   ) {
-    const userId = (req as any).user.sub;
     return this.transactionsService.update(id, userId, updateTransactionDto);
   }
 

@@ -28,7 +28,7 @@ export class FindAllTransactionsDto {
 
   @ApiProperty()
   @IsOptional()
-  @IsIn(['INCOME', 'EXPENSES'])
+  @IsIn(['INCOME', 'EXPENSE'])
   type?: string;
 
   @ApiProperty()

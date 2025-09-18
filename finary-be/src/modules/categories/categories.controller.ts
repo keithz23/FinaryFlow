@@ -8,12 +8,15 @@ import {
   Delete,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Request } from 'express';
 import { CombinedAuthGuard } from '../auth/guards/combined.guard';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
+import { ECategories } from 'src/common/enums/ECategories';
 
 @Controller('categories')
 export class CategoriesController {
@@ -21,16 +24,18 @@ export class CategoriesController {
 
   @Post()
   @UseGuards(CombinedAuthGuard)
-  create(@Body() createCategoryDto: CreateCategoryDto, @Req() req: Request) {
-    const userId = (req as any).user.sub;
+  create(
+    @Body() createCategoryDto: CreateCategoryDto,
+    @GetUser('sub') userId: string,
+  ) {
+    console.log(userId);
     return this.categoriesService.create(userId, createCategoryDto);
   }
 
   @Get()
   @UseGuards(CombinedAuthGuard)
-  findAll(@Req() req: Request) {
-    const userId = (req as any).user.sub;
-    return this.categoriesService.findAll(userId);
+  findAll(@GetUser('sub') userId: string, @Query('type') type: ECategories) {
+    return this.categoriesService.findAll(userId, type);
   }
 
   @Get(':id')
@@ -44,9 +49,8 @@ export class CategoriesController {
   update(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
-    @Req() req: Request,
+    @GetUser('sub') userId: string,
   ) {
-    const userId = (req as any).user.sub;
     return this.categoriesService.update(id, userId, updateCategoryDto);
   }
 
