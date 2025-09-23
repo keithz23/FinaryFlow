@@ -70,6 +70,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
         console.error("Callback URL is not configure");
         return;
       }
+      console.log(`Call back url ::: ${callbackUrl}`);
       window.location.href = callbackUrl;
     } catch (error) {
       return;
