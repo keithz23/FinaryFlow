@@ -9,6 +9,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
+import { ECategories } from 'src/common/enums/ECategories';
 
 @Injectable()
 export class CategoriesService {
@@ -17,8 +18,7 @@ export class CategoriesService {
     private redisService: RedisService,
   ) {}
   async create(userId: string, createCategoryDto: CreateCategoryDto) {
-    const { name, description } = createCategoryDto;
-
+    const { name, description, type } = createCategoryDto;
     try {
       // Input validation
       if (!userId || typeof userId !== 'string') {
@@ -45,6 +45,7 @@ export class CategoriesService {
           userId,
           name: name.trim(),
           description: description?.trim() || null,
+          type: type,
         },
       });
 
@@ -74,18 +75,32 @@ export class CategoriesService {
     }
   }
 
-  async findAll(userId: string) {
-    const cacheKey = `categories:${userId}`;
+  async findAll(userId: string, type?: ECategories) {
+    const cacheKey = `categories:${userId}:${type || 'all'}`;
+
     try {
-      if (!userId || typeof userId !== 'string') {
-        throw new BadRequestException('Invalid userID');
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+
+      if (!userExists) {
+        throw new BadRequestException('User not found');
       }
+
       const cache = await this.redisService.get(cacheKey);
       if (cache) {
         return JSON.parse(cache);
       }
-      const category = await this.prisma.category.findMany({
-        where: { userId },
+
+      // Build where condition
+      const where: any = { userId };
+      if (type) {
+        where.type = type;
+      }
+
+      const categories = await this.prisma.category.findMany({
+        where,
         include: {
           budgets: true,
           goals: true,
@@ -95,15 +110,15 @@ export class CategoriesService {
 
       await this.redisService.setWithExpire(
         cacheKey,
-        JSON.stringify(category),
+        JSON.stringify(categories),
         3600,
       );
 
-      return category;
+      return categories;
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException(
-        'An unexpected error occurred while fetching all categories data',
+        'An unexpected error occurred while fetching categories',
       );
     }
   }

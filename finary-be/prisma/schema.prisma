@@ -192,6 +192,7 @@ model Category {
   color        String?
   icon         String?
   description  String
+  type         Type
   transactions Transaction[]
   budgets      Budgets[]
   goals        Goals[]
@@ -208,4 +209,11 @@ enum Period {
   WEEKLY
   MONTHLY
   YEARLY
+}
+
+enum Type {
+  expense
+  income
+  goal
+  budget
 }

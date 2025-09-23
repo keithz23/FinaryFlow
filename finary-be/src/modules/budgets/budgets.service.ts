@@ -9,6 +9,7 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
+import { Budgets, Category } from '@prisma/client';
 
 @Injectable()
 export class BudgetsService {
@@ -37,7 +38,7 @@ export class BudgetsService {
       });
 
       // Invalidate cache afater successful creation
-      await this.invalidateUserBudgetsCache(userId);
+      await this.invalidateUserBudgetsTransactionsCache(userId);
 
       return budget;
     } catch (error) {
@@ -55,16 +56,20 @@ export class BudgetsService {
     }
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string): Promise<(Budgets & { category: Category })[]> {
     const cacheKey = `budgets:${userId}`;
     try {
-      if (!userId || typeof userId !== 'string') {
-        throw new BadRequestException('Invalid userID');
-      }
       const cache = await this.redisService.get(cacheKey);
       if (cache) {
-        return JSON.parse(cache);
+        try {
+          const cachedData = JSON.parse(cache);
+          return cachedData;
+        } catch (error) {
+          console.error('Cache parse error:', error);
+          await this.redisService.del(cacheKey);
+        }
       }
+
       const budgets = await this.prisma.budgets.findMany({
         where: { userId },
         include: {
@@ -75,7 +80,7 @@ export class BudgetsService {
       await this.redisService.setWithExpire(
         cacheKey,
         JSON.stringify(budgets),
-        3600,
+        600,
       );
 
       return budgets;
@@ -156,7 +161,7 @@ export class BudgetsService {
       });
 
       // Invalidate cache after successful update
-      await this.invalidateUserBudgetsCache(existed.userId);
+      await this.invalidateUserBudgetsTransactionsCache(existed.userId);
 
       return updated;
     } catch (error: any) {
@@ -201,7 +206,7 @@ export class BudgetsService {
       });
 
       // Invalidate cache after successful deletion
-      await this.invalidateUserBudgetsCache(budgetToDelete.userId);
+      await this.invalidateUserBudgetsTransactionsCache(budgetToDelete.userId);
 
       return deletedBudget;
     } catch (error: any) {
@@ -222,7 +227,15 @@ export class BudgetsService {
     }
   }
 
-  private async invalidateUserBudgetsCache(userId: string) {
-    await this.redisService.del(`budgets:${userId}`);
+  private async invalidateUserBudgetsTransactionsCache(userId: string) {
+    try {
+      await Promise.all([
+        this.redisService.del(`budgets:${userId}`),
+        this.redisService.del(`transactions:${userId}`),
+      ]);
+      console.log(`Cache invalidated for user: ${userId}`);
+    } catch (error) {
+      console.error('Cache invalidation failed:', error);
+    }
   }
 }

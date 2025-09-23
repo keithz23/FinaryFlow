@@ -1,14 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { X, DollarSign, Calendar, Tag, FileText } from "lucide-react";
 import type { Transaction } from "../../types";
+import type { CreateTransaction } from "../../types/transactions/transactions";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { useCategories } from "../../hooks/useCategories";
+import { useBudgets } from "../../hooks/useBudgets";
 
 interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (transaction: Omit<Transaction, "id">) => void;
+  onSubmit: (data: CreateTransaction) => void;
   transaction?: Transaction;
   mode: "add" | "edit";
 }
+
+type TxType = "INCOME" | "EXPENSE";
 
 const TransactionForm: React.FC<TransactionFormProps> = ({
   isOpen,
@@ -17,100 +23,81 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   transaction,
   mode,
 }) => {
-  const [formData, setFormData] = useState({
-    description: transaction?.description || "",
-    amount: transaction ? Math.abs(transaction.amount).toString() : "",
-    date: transaction?.date || new Date().toISOString().split("T")[0],
-    type: transaction?.type || ("expense" as "income" | "expense"),
-    category: transaction?.category || "",
+  const { data: categoriesData, isError, isLoading } = useCategories();
+  const { data: budgetCategoriesData } = useBudgets();
+
+  const defaultValues: CreateTransaction = useMemo(
+    () => ({
+      categoryId: transaction?.category?.id ?? transaction?.categoryId ?? "",
+      amount: Number(transaction?.amount ?? 0),
+      description: transaction?.description ?? "",
+      type: (transaction?.type as TxType) ?? "EXPENSE",
+      date: transaction?.date
+        ? String(transaction.date).slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    }),
+    [transaction]
+  );
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateTransaction>({
+    mode: "onChange",
+    defaultValues,
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (isOpen) reset(defaultValues);
+  }, [isOpen, defaultValues, reset]);
 
-  const categories = {
-    income: ["Salary", "Freelance", "Investment", "Business", "Other Income"],
-    expense: [
-      "Food",
-      "Transportation",
-      "Entertainment",
-      "Shopping",
-      "Utilities",
-      "Healthcare",
-      "Education",
-      "Travel",
-      "Other",
-    ],
-  };
+  const watchType = (watch("type") as TxType) || "EXPENSE";
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  useEffect(() => {
+    setValue("categoryId", "", { shouldValidate: true });
+  }, [watchType, setValue]);
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
+  const availCategories = useMemo(() => {
+    if (!categoriesData) return [];
+
+    if (watchType === "EXPENSE" && Array.isArray(budgetCategoriesData)) {
+      return budgetCategoriesData.map((budget) => budget.category);
     }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = "Amount must be greater than 0";
-    }
+    return Array.isArray(categoriesData) ? categoriesData : [];
+  }, [categoriesData, budgetCategoriesData, watchType]);
 
-    if (!formData.date) {
-      newErrors.date = "Date is required";
-    }
-
-    if (!formData.category) {
-      newErrors.category = "Category is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    const amount = parseFloat(formData.amount);
-    const finalAmount = formData.type === "expense" ? -amount : amount;
-
-    onSubmit({
-      description: formData.description.trim(),
-      amount: finalAmount,
-      date: formData.date,
-      type: formData.type,
-      category: formData.category,
-    });
-
+  const onValid: SubmitHandler<CreateTransaction> = (values) => {
+    const payload: CreateTransaction = {
+      amount: Number(values.amount),
+      categoryId: values.categoryId,
+      date: values.date,
+      description: values.description.trim(),
+      type: values.type as TxType,
+    };
+    onSubmit(payload);
     onClose();
-    setFormData({
-      description: "",
-      amount: "",
-      date: new Date().toISOString().split("T")[0],
-      type: "expense",
-      category: "",
-    });
-    setErrors({});
-  };
-
-  const handleTypeChange = (type: "income" | "expense") => {
-    setFormData({
-      ...formData,
-      type,
-      category: "", // Reset category when type changes
-    });
   };
 
   if (!isOpen) return null;
+
+  const incomeActive = watchType === "INCOME";
+  const expenseActive = watchType === "EXPENSE";
 
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-40 p-4 h-screen"
       onClick={onClose}
-      aria-hidden="true"
     >
       <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -119,13 +106,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Close"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Transaction Type */}
+        <form onSubmit={handleSubmit(onValid)} className="p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Transaction Type
@@ -133,9 +120,11 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => handleTypeChange("income")}
+                onClick={() =>
+                  setValue("type", "INCOME", { shouldValidate: true })
+                }
                 className={`p-3 rounded-lg border-2 transition-all ${
-                  formData.type === "income"
+                  incomeActive
                     ? "border-green-500 bg-green-50 text-green-700"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
@@ -145,11 +134,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                   <span className="font-medium">Income</span>
                 </div>
               </button>
+
               <button
                 type="button"
-                onClick={() => handleTypeChange("expense")}
+                onClick={() =>
+                  setValue("type", "EXPENSE", { shouldValidate: true })
+                }
                 className={`p-3 rounded-lg border-2 transition-all ${
-                  formData.type === "expense"
+                  expenseActive
                     ? "border-red-500 bg-red-50 text-red-700"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
@@ -160,9 +152,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
               </button>
             </div>
+            <input
+              type="hidden"
+              {...register("type", { required: "Type is required" })}
+            />
           </div>
 
-          {/* Description */}
           <div>
             <label
               htmlFor="description"
@@ -171,26 +166,27 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               Description
             </label>
             <div className="relative">
-              <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 id="description"
                 type="text"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                {...register("description", {
+                  required: "Description is required",
+                  minLength: { value: 2, message: "At least 2 characters" },
+                })}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                   errors.description ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Enter transaction description"
               />
             </div>
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            {errors.description?.message && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
-          {/* Amount */}
           <div>
             <label
               htmlFor="amount"
@@ -199,28 +195,32 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               Amount
             </label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 id="amount"
                 type="number"
                 step="0.01"
                 min="0"
-                value={formData.amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount: e.target.value })
-                }
+                {...register("amount", {
+                  required: "Amount is required",
+                  valueAsNumber: true,
+                  validate: (v) =>
+                    (typeof v === "number" && !Number.isNaN(v) && v >= 0) ||
+                    "Amount must be a non-negative number",
+                })}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                   errors.amount ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="0.00"
               />
             </div>
-            {errors.amount && (
-              <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
+            {errors.amount?.message && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.amount.message}
+              </p>
             )}
           </div>
 
-          {/* Date */}
           <div>
             <label
               htmlFor="date"
@@ -229,58 +229,61 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               Date
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 id="date"
                 type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
+                {...register("date", { required: "Date is required" })}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                   errors.date ? "border-red-500" : "border-gray-300"
                 }`}
               />
             </div>
-            {errors.date && (
-              <p className="mt-1 text-sm text-red-600">{errors.date}</p>
+            {errors.date?.message && (
+              <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
             )}
           </div>
 
-          {/* Category */}
           <div>
             <label
-              htmlFor="category"
+              htmlFor="categoryId"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Category
             </label>
             <div className="relative">
-              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <select
-                id="category"
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
+                id="categoryId"
+                disabled={isLoading || isError}
+                {...register("categoryId", {
+                  required: "Category is required",
+                })}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                  errors.category ? "border-red-500" : "border-gray-300"
+                  errors.categoryId ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value="">Select a category</option>
-                {categories[formData.type].map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                <option value="">
+                  {isLoading
+                    ? "Loading categories…"
+                    : isError
+                    ? "Failed to load categories"
+                    : "Select a category"}
+                </option>
+                {availCategories.map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
                   </option>
                 ))}
               </select>
             </div>
-            {errors.category && (
-              <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+            {errors.categoryId?.message && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.categoryId.message}
+              </p>
             )}
           </div>
 
-          {/* Form Actions */}
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
@@ -291,8 +294,9 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               className={`flex-1 px-4 py-3 rounded-lg font-medium text-white transition-colors ${
-                formData.type === "income"
+                incomeActive
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700"
               }`}
