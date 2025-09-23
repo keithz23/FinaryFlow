@@ -22,6 +22,7 @@ import { GoalsModule } from './modules/goals/goals.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env.development', '.env.production'],
       load: [configuration],
       validationSchema,
       validationOptions: {

@@ -14,9 +14,6 @@ const ReportsPage: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const monthlyData = [
-    2400, 2600, 2300, 2800, 3200, 2900, 3400, 3100, 2800, 3300, 3600, 3200,
-  ];
   const expenseData = [
     1200, 1400, 1100, 1300, 1500, 1350, 1600, 1450, 1300, 1550, 1700, 1500,
   ];
