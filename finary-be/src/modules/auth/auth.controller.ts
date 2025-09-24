@@ -28,19 +28,15 @@ import { SoftAuthGuard } from './guards/soft-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { UserEntity } from 'src/common/interfaces';
-
-const clientUrl =
-  process.env.NODE_ENV == 'development'
-    ? 'http://localhost:5173'
-    : process.env.CLIENT_URL;
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly tokenService: TokenService,
+    private configService: ConfigService,
   ) {}
-
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
@@ -162,8 +158,8 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
-
-    return res.redirect(clientUrl);
+    console.log(`client url::: ${this.configService.get('config.client.url')}`);
+    return res.redirect(this.configService.get('config.client.url'));
   }
 
   @UseGuards(CombinedAuthGuard)

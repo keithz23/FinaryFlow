@@ -46,7 +46,11 @@ export default registerAs('config', () => ({
   },
 
   cors: {
-    origin: process.env.CORS_ORIGIN || ['http://localhost:3000'],
+    origin: process.env.CORS_ORIGIN || ['http://localhost:5173'],
     credentials: process.env.CORS_CREDENTIALS === 'true',
+  },
+
+  client: {
+    url: process.env.CLIENT_URL || 'http://localhost:5173',
   },
 }));
