@@ -23,9 +23,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   transaction,
   mode,
 }) => {
-  const { data: categoriesData, isError, isLoading } = useCategories();
-  const { data: budgetCategoriesData } = useBudgets();
-
+  // Lấy type hiện tại ngay từ watch (mặc định EXPENSE)
   const defaultValues: CreateTransaction = useMemo(
     () => ({
       categoryId: transaction?.category?.id ?? transaction?.categoryId ?? "",
@@ -51,23 +49,27 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
     defaultValues,
   });
 
+  const watchType = (watch("type") as TxType) || "EXPENSE";
+
+  const {
+    data: categoriesData,
+    isError,
+    isLoading,
+  } = useCategories(watchType.toLocaleLowerCase());
+  const { data: budgetCategoriesData } = useBudgets();
+
   useEffect(() => {
     if (isOpen) reset(defaultValues);
   }, [isOpen, defaultValues, reset]);
-
-  const watchType = (watch("type") as TxType) || "EXPENSE";
 
   useEffect(() => {
     setValue("categoryId", "", { shouldValidate: true });
   }, [watchType, setValue]);
 
   const availCategories = useMemo(() => {
-    if (!categoriesData) return [];
-
     if (watchType === "EXPENSE" && Array.isArray(budgetCategoriesData)) {
-      return budgetCategoriesData.map((budget) => budget.category);
+      return budgetCategoriesData.map((b) => b.category);
     }
-
     return Array.isArray(categoriesData) ? categoriesData : [];
   }, [categoriesData, budgetCategoriesData, watchType]);
 

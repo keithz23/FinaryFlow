@@ -77,7 +77,6 @@ export class CategoriesService {
 
   async findAll(userId: string, type?: ECategories) {
     const cacheKey = `categories:${userId}:${type || 'all'}`;
-
     try {
       const userExists = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -111,7 +110,7 @@ export class CategoriesService {
       await this.redisService.setWithExpire(
         cacheKey,
         JSON.stringify(categories),
-        3600,
+        900,
       );
 
       return categories;

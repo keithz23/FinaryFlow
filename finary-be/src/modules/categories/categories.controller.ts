@@ -28,7 +28,6 @@ export class CategoriesController {
     @Body() createCategoryDto: CreateCategoryDto,
     @GetUser('sub') userId: string,
   ) {
-    console.log(userId);
     return this.categoriesService.create(userId, createCategoryDto);
   }
 

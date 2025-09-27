@@ -89,7 +89,6 @@ export class TransactionsService {
     const where: any = { userId };
 
     if (filters.type) where.type = filters.type;
-    console.log(filters.type);
     if (filters.categoryId) where.categoryId = filters.categoryId;
 
     if (filters.dateFrom || filters.dateTo) {
