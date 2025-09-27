@@ -5,12 +5,12 @@ export class CreateGoalDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
-  goalName: string;
+  name: string;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsInt()
-  amount: number;
+  amount: Number;
 
   @ApiProperty()
   @IsNotEmpty()

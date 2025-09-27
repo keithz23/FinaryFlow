@@ -155,13 +155,13 @@ model Budgets {
 
 model Goals {
   id     String   @id @default(cuid())
-  user   User     @relation(fields: [userId], references: [id])
   userId String
   name   String
-  amount String
+  amount Float
   date   DateTime
 
-  Category   Category @relation(fields: [categoryId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
   categoryId String
 
   createdAt DateTime @default(now())

@@ -158,7 +158,6 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
-    console.log(`client url::: ${this.configService.get('config.client.url')}`);
     return res.redirect(this.configService.get('config.client.url'));
   }
 

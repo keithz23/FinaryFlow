@@ -4,8 +4,10 @@ import { ApiEndpoint } from "../../lib/api/endpoint";
 import type { CreateCategory } from "../../types/categories/categories";
 
 export const categoryService = {
-  findAllCategories: () => {
-    return instance.get(ApiEndpoint.FIND_ALL_CATEGORIES);
+  findAllCategories: (categoryType: string) => {
+    return instance.get(
+      `${ApiEndpoint.FIND_ALL_CATEGORIES}?type=${categoryType}`
+    );
   },
 
   findOneCategory: (id: string) => {

@@ -31,7 +31,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
   mode,
 }) => {
   // Categories
-  const { data, isError, isLoading } = useCategories();
+  const { data, isError, isLoading } = useCategories("budget");
   const categories: CategoryItem[] = useMemo(() => data ?? [], [data]);
 
   const defaultValues: BudgetUpsertDto = useMemo(

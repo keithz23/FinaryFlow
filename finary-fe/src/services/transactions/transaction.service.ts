@@ -18,8 +18,10 @@ export const transactionService = {
   },
 
   updateTransaction: (id: string, payload: UpdateTransaction) => {
-    console.log(payload)
-    return instance.patch(buildUrl(ApiEndpoint.UPDATE_TRANSACTION, { id }), payload);
+    return instance.patch(
+      buildUrl(ApiEndpoint.UPDATE_TRANSACTION, { id }),
+      payload
+    );
   },
 
   deleteTransaction: (id: string) => {

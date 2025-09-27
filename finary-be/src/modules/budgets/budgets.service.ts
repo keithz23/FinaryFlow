@@ -94,10 +94,6 @@ export class BudgetsService {
 
   async findOne(id: string) {
     try {
-      if (!id || typeof id !== 'string') {
-        throw new BadRequestException('Invalid budget id');
-      }
-
       const budget = await this.prisma.budgets.findUnique({
         where: { id },
         include: { category: true },
@@ -187,10 +183,6 @@ export class BudgetsService {
 
   async remove(id: string) {
     try {
-      if (!id || typeof id !== 'string') {
-        throw new BadRequestException('Invalid budget id');
-      }
-
       // Get userId before deletion for cache invalidation
       const budgetToDelete = await this.prisma.budgets.findUnique({
         where: { id },
