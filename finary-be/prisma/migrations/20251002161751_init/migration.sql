@@ -4,6 +4,9 @@ CREATE TYPE "public"."TransactionType" AS ENUM ('INCOME', 'EXPENSE');
 -- CreateEnum
 CREATE TYPE "public"."Period" AS ENUM ('WEEKLY', 'MONTHLY', 'YEARLY');
 
+-- CreateEnum
+CREATE TYPE "public"."Type" AS ENUM ('expense', 'income', 'goal', 'budget');
+
 -- CreateTable
 CREATE TABLE "public"."users" (
     "id" TEXT NOT NULL,
@@ -96,9 +99,8 @@ CREATE TABLE "public"."budgets" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "categoryId" TEXT NOT NULL,
-    "amount" INTEGER NOT NULL,
     "period" "public"."Period" NOT NULL,
-    "allocated" INTEGER NOT NULL DEFAULT 0,
+    "allocated" INTEGER NOT NULL,
     "spent" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "date" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,7 +113,7 @@ CREATE TABLE "public"."goals" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "amount" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "categoryId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -141,6 +143,7 @@ CREATE TABLE "public"."category" (
     "color" TEXT,
     "icon" TEXT,
     "description" TEXT NOT NULL,
+    "type" "public"."Type" NOT NULL,
 
     CONSTRAINT "category_pkey" PRIMARY KEY ("id")
 );

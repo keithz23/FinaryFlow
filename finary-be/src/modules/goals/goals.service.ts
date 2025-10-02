@@ -63,7 +63,7 @@ export class GoalsService {
     }
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string): Promise<Goals[]> {
     const cacheKey = `goals:${userId}`;
     try {
       const cache = await this.redisService.get(cacheKey);

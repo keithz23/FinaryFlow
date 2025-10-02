@@ -21,7 +21,7 @@ export function setupSwagger(app: INestApplication): void {
       'JWT-auth',
     )
     .addServer('http://localhost:8000', 'Development server')
-    .addServer('https://ecomgrove.store', 'Production server')
+    .addServer('https://finaryflow.app', 'Production server')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
